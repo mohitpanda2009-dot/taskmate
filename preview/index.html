@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Taskmate Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+.phone-frame {
+  width: 375px; height: 812px; background: #F8F9FA; border-radius: 40px; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4); position: relative; display: flex; flex-direction: column;
+}
+
+/* Status Bar */
+.status-bar { height: 50px; background: #fff; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 24px 8px; font-size: 12px; font-weight: 600; }
+.status-bar .time { font-size: 15px; font-weight: 700; }
+.status-icons { display: flex; gap: 4px; align-items: center; font-size: 14px; }
+
+/* Screen Container */
+.screen-container { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.screen-container::-webkit-scrollbar { display: none; }
+
+/* All Screens */
+.screen { display: none; flex-direction: column; height: 100%; }
+.screen.active { display: flex; }
+
+/* ========= LOGIN SCREEN ========= */
+.login-screen { background: linear-gradient(135deg, #4A90D9 0%, #3570A8 100%); padding: 40px 24px; justify-content: center; align-items: center; color: #fff; }
+.login-screen .status-bar-override { position: absolute; top: 0; left: 0; right: 0; }
+.login-logo { font-size: 56px; margin-bottom: 8px; }
+.login-title { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+.login-subtitle { font-size: 14px; opacity: 0.85; margin-bottom: 40px; text-align: center; }
+.login-input-group { width: 100%; max-width: 320px; margin-bottom: 16px; }
+.login-label { font-size: 12px; opacity: 0.8; margin-bottom: 6px; }
+.login-input-row { display: flex; gap: 8px; }
+.country-code { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; padding: 14px 12px; color: #fff; font-size: 16px; width: 70px; text-align: center; }
+.phone-input { flex: 1; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; padding: 14px 16px; color: #fff; font-size: 16px; outline: none; }
+.phone-input::placeholder { color: rgba(255,255,255,0.5); }
+.login-btn { width: 100%; max-width: 320px; background: #F5A623; color: #fff; border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: transform 0.2s; }
+.login-btn:hover { transform: scale(1.02); }
+.login-terms { font-size: 11px; opacity: 0.6; margin-top: 20px; text-align: center; max-width: 280px; }
+
+/* ========= HOME SCREEN ========= */
+.home-header { background: #4A90D9; padding: 16px 20px 20px; color: #fff; }
+.home-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.home-greeting { font-size: 13px; opacity: 0.85; }
+.home-name { font-size: 22px; font-weight: 700; }
+.home-avatar { width: 42px; height: 42px; border-radius: 50%; background: #F5A623; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+.search-bar { display: flex; align-items: center; background: rgba(255,255,255,0.2); border-radius: 12px; padding: 10px 14px; gap: 8px; }
+.search-bar i { opacity: 0.7; }
+.search-bar input { background: none; border: none; color: #fff; font-size: 14px; flex: 1; outline: none; }
+.search-bar input::placeholder { color: rgba(255,255,255,0.6); }
+
+.role-toggle { display: flex; margin: 16px 20px 0; background: #fff; border-radius: 12px; padding: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.role-btn { flex: 1; padding: 10px; text-align: center; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s; color: #7F8C8D; }
+.role-btn.active { background: #4A90D9; color: #fff; }
+
+.categories-scroll { display: flex; gap: 8px; padding: 16px 20px; overflow-x: auto; }
+.categories-scroll::-webkit-scrollbar { display: none; }
+.cat-chip { flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #fff; color: #7F8C8D; border: 1px solid #E8ECF0; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.cat-chip.active { background: #4A90D9; color: #fff; border-color: #4A90D9; }
+
+.section-title { padding: 0 20px; font-size: 16px; font-weight: 700; color: #2C3E50; margin-bottom: 12px; }
+.tasks-list { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+
+.task-card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; transition: transform 0.2s; }
+.task-card:hover { transform: translateY(-1px); }
+.task-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.task-category-tag { font-size: 11px; font-weight: 600; color: #4A90D9; background: #EBF5FF; padding: 4px 10px; border-radius: 6px; }
+.task-budget { font-size: 18px; font-weight: 700; color: #27AE60; }
+.task-budget span { font-size: 12px; font-weight: 400; }
+.task-title { font-size: 15px; font-weight: 600; color: #2C3E50; margin-bottom: 6px; }
+.task-desc { font-size: 12px; color: #7F8C8D; line-height: 1.4; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.task-meta { display: flex; gap: 12px; align-items: center; font-size: 11px; color: #95A5A6; }
+.task-meta i { font-size: 13px; margin-right: 2px; }
+.task-meta-item { display: flex; align-items: center; gap: 4px; }
+.task-creator { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #F0F2F5; }
+.task-creator-avatar { width: 24px; height: 24px; border-radius: 50%; background: #E8ECF0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #7F8C8D; }
+.task-creator-name { font-size: 12px; color: #7F8C8D; }
+.task-creator-rating { font-size: 11px; color: #F5A623; margin-left: auto; }
+
+/* ========= CREATE TASK SCREEN ========= */
+.create-header { background: #fff; padding: 16px 20px; font-size: 20px; font-weight: 700; color: #2C3E50; border-bottom: 1px solid #E8ECF0; }
+.create-form { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: #2C3E50; }
+.form-input { padding: 14px 16px; border: 1.5px solid #E8ECF0; border-radius: 12px; font-size: 14px; color: #2C3E50; outline: none; font-family: inherit; transition: border-color 0.2s; }
+.form-input:focus { border-color: #4A90D9; }
+.form-input::placeholder { color: #BDC3C7; }
+textarea.form-input { resize: none; min-height: 90px; }
+.budget-row { display: flex; align-items: center; gap: 4px; }
+.budget-symbol { font-size: 18px; font-weight: 600; color: #27AE60; }
+.category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.cat-option { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border: 1.5px solid #E8ECF0; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-size: 11px; color: #7F8C8D; text-align: center; }
+.cat-option i { font-size: 22px; color: #95A5A6; }
+.cat-option.selected { border-color: #4A90D9; background: #EBF5FF; color: #4A90D9; }
+.cat-option.selected i { color: #4A90D9; }
+.post-btn { background: #4A90D9; color: #fff; border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+
+/* ========= CHAT SCREEN ========= */
+.chat-header { background: #fff; padding: 16px 20px; font-size: 20px; font-weight: 700; color: #2C3E50; border-bottom: 1px solid #E8ECF0; }
+.chat-list { padding: 8px 0; }
+.chat-item { display: flex; align-items: center; gap: 12px; padding: 14px 20px; cursor: pointer; transition: background 0.2s; }
+.chat-item:hover { background: #F0F4FF; }
+.chat-item.unread { background: #FAFBFF; }
+.chat-avatar { position: relative; flex-shrink: 0; }
+.chat-avatar-circle { width: 48px; height: 48px; border-radius: 50%; background: #E8ECF0; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #7F8C8D; font-size: 16px; }
+.online-dot { position: absolute; bottom: 1px; right: 1px; width: 12px; height: 12px; background: #2ECC71; border-radius: 50%; border: 2px solid #fff; }
+.chat-content { flex: 1; min-width: 0; }
+.chat-name-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.chat-name { font-size: 15px; font-weight: 600; color: #2C3E50; }
+.chat-time { font-size: 11px; color: #95A5A6; }
+.chat-task-name { font-size: 11px; color: #4A90D9; margin-bottom: 2px; }
+.chat-last-msg { font-size: 13px; color: #7F8C8D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-item.unread .chat-last-msg { color: #2C3E50; font-weight: 500; }
+.unread-badge { flex-shrink: 0; min-width: 20px; height: 20px; background: #4A90D9; color: #fff; border-radius: 10px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; padding: 0 6px; }
+
+/* ========= NOTIFICATIONS SCREEN ========= */
+.notif-header { background: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E8ECF0; }
+.notif-header h2 { font-size: 20px; font-weight: 700; color: #2C3E50; }
+.mark-read-btn { font-size: 13px; color: #4A90D9; font-weight: 500; cursor: pointer; background: none; border: none; }
+.notif-section { padding: 12px 20px 4px; font-size: 12px; font-weight: 600; color: #95A5A6; text-transform: uppercase; }
+.notif-item { display: flex; gap: 12px; padding: 14px 20px; align-items: flex-start; }
+.notif-item.unread { background: #F6F9FF; }
+.notif-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.notif-icon.task { background: #EBF5FF; color: #4A90D9; }
+.notif-icon.chat { background: #E8F8EF; color: #27AE60; }
+.notif-icon.payment { background: #FFF8E7; color: #F5A623; }
+.notif-icon.system { background: #F0F2F5; color: #7F8C8D; }
+.notif-content { flex: 1; }
+.notif-title { font-size: 14px; font-weight: 600; color: #2C3E50; margin-bottom: 2px; }
+.notif-body { font-size: 13px; color: #7F8C8D; line-height: 1.3; }
+.notif-time { font-size: 11px; color: #BDC3C7; margin-top: 4px; }
+.notif-dot { width: 8px; height: 8px; background: #4A90D9; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+
+/* ========= PROFILE SCREEN ========= */
+.profile-top { background: #4A90D9; padding: 24px 20px 30px; color: #fff; text-align: center; position: relative; }
+.profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: #F5A623; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; border: 3px solid rgba(255,255,255,0.3); }
+.profile-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.profile-phone { font-size: 13px; opacity: 0.8; }
+.profile-verified { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-top: 8px; }
+.profile-stats { display: flex; justify-content: center; gap: 32px; margin-top: 16px; }
+.profile-stat { text-align: center; }
+.profile-stat-value { font-size: 20px; font-weight: 700; }
+.profile-stat-label { font-size: 11px; opacity: 0.8; }
+.profile-rating { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 12px; font-size: 14px; }
+.stars { color: #FFD700; }
+
+.profile-wallet-card { margin: -16px 20px 16px; background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+.wallet-info { }
+.wallet-label { font-size: 12px; color: #95A5A6; }
+.wallet-amount { font-size: 26px; font-weight: 700; color: #27AE60; }
+.wallet-btn { background: #27AE60; color: #fff; border: none; border-radius: 10px; padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.profile-menu { padding: 8px 20px 20px; display: flex; flex-direction: column; gap: 4px; }
+.profile-menu-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: #fff; border-radius: 12px; cursor: pointer; transition: background 0.2s; }
+.profile-menu-item:hover { background: #F0F4FF; }
+.menu-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.menu-icon.blue { background: #EBF5FF; color: #4A90D9; }
+.menu-icon.green { background: #E8F8EF; color: #27AE60; }
+.menu-icon.orange { background: #FFF8E7; color: #F5A623; }
+.menu-icon.gray { background: #F0F2F5; color: #7F8C8D; }
+.menu-icon.red { background: #FDECEC; color: #E74C3C; }
+.profile-menu-item span { flex: 1; font-size: 14px; font-weight: 500; color: #2C3E50; }
+.profile-menu-item i.ri-arrow-right-s-line { color: #BDC3C7; }
+
+/* ========= BOTTOM TAB BAR ========= */
+.tab-bar { display: flex; background: #fff; border-top: 1px solid #E8ECF0; padding: 8px 0 20px; }
+.tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; transition: color 0.2s; color: #95A5A6; position: relative; }
+.tab-item.active { color: #4A90D9; }
+.tab-item i { font-size: 22px; }
+.tab-item span { font-size: 10px; font-weight: 500; }
+.tab-badge { position: absolute; top: -2px; right: 50%; transform: translateX(14px); min-width: 16px; height: 16px; background: #E74C3C; color: #fff; font-size: 9px; font-weight: 700; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+
+/* Title outside phone */
+.page-title-outside { text-align: center; color: #fff; margin-bottom: 20px; }
+.page-title-outside h1 { font-size: 28px; font-weight: 700; }
+.page-title-outside p { opacity: 0.6; font-size: 14px; margin-top: 4px; }
+
+/* Animations */
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.task-card { animation: slideIn 0.3s ease forwards; }
+.task-card:nth-child(2) { animation-delay: 0.05s; }
+.task-card:nth-child(3) { animation-delay: 0.1s; }
+.task-card:nth-child(4) { animation-delay: 0.15s; }
+</style>
+</head>
+<body>
+
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <div class="page-title-outside">
+    <h1>⚡ Taskmate</h1>
+    <p>Micro-task marketplace — App Preview</p>
+  </div>
+
+  <div class="phone-frame">
+    <div class="status-bar" id="statusBar">
+      <div class="time">12:06</div>
+      <div class="status-icons">
+        <i class="ri-signal-wifi-fill"></i>
+        <i class="ri-battery-2-charge-fill"></i>
+      </div>
+    </div>
+
+    <div class="screen-container">
+
+      <!-- LOGIN SCREEN -->
+      <div class="screen active" id="screen-login" style="background:linear-gradient(135deg,#4A90D9,#3570A8);padding:40px 24px;justify-content:center;align-items:center;color:#fff;">
+        <div class="login-logo">⚡</div>
+        <div class="login-title">Taskmate</div>
+        <div class="login-subtitle">Get your micro-tasks done by people nearby, or earn by helping others!</div>
+        <div class="login-input-group">
+          <div class="login-label">PHONE NUMBER</div>
+          <div class="login-input-row">
+            <div class="country-code">+91</div>
+            <input class="phone-input" type="tel" placeholder="98765 43210" value="98765 43210">
+          </div>
+        </div>
+        <button class="login-btn" onclick="switchScreen('home')">Send OTP →</button>
+        <div class="login-terms">By continuing, you agree to our Terms of Service and Privacy Policy</div>
+      </div>
+
+      <!-- HOME SCREEN -->
+      <div class="screen" id="screen-home">
+        <div class="home-header">
+          <div class="home-header-top">
+            <div>
+              <div class="home-greeting">Good afternoon 👋</div>
+              <div class="home-name">Mohit</div>
+            </div>
+            <div class="home-avatar" onclick="switchScreen('profile')">M</div>
+          </div>
+          <div class="search-bar">
+            <i class="ri-search-line"></i>
+            <input placeholder="Search tasks near you...">
+          </div>
+        </div>
+
+        <div class="role-toggle">
+          <div class="role-btn active" onclick="toggleRole(this)">🔍 Find Tasks</div>
+          <div class="role-btn" onclick="toggleRole(this)">📝 My Tasks</div>
+        </div>
+
+        <div class="categories-scroll">
+          <div class="cat-chip active">All</div>
+          <div class="cat-chip" onclick="this.classList.toggle('active')">📝 Form Filing</div>
+          <div class="cat-chip" onclick="this.classList.toggle('active')">📦 Delivery</div>
+          <div class="cat-chip" onclick="this.classList.toggle('active')">🧍 Queue</div>
+          <div class="cat-chip" onclick="this.classList.toggle('active')">🛒 Shopping</div>
+          <div class="cat-chip" onclick="this.classList.toggle('active')">📄 Documents</div>
+          <div class="cat-chip" onclick="this.classList.toggle('active')">🔧 Repairs</div>
+          <div class="cat-chip" onclick="this.classList.toggle('active')">📸 Photo</div>
+        </div>
+
+        <div class="section-title">Nearby Tasks (12)</div>
+        <div class="tasks-list">
+          <div class="task-card" onclick="switchScreen('create')">
+            <div class="task-card-header">
+              <div class="task-category-tag">📝 Form Filling</div>
+              <div class="task-budget">₹300</div>
+            </div>
+            <div class="task-title">Submit passport form at PSK</div>
+            <div class="task-desc">Need someone to submit my filled passport renewal form at Koramangala PSK. All documents are ready, just need physical submission.</div>
+            <div class="task-meta">
+              <div class="task-meta-item"><i class="ri-map-pin-line"></i> 1.2 km</div>
+              <div class="task-meta-item"><i class="ri-time-line"></i> 10 min ago</div>
+              <div class="task-meta-item"><i class="ri-user-line"></i> 3 applied</div>
+            </div>
+            <div class="task-creator">
+              <div class="task-creator-avatar">PS</div>
+              <div class="task-creator-name">Priya Sharma</div>
+              <div class="task-creator-rating">⭐ 4.8</div>
+            </div>
+          </div>
+
+          <div class="task-card">
+            <div class="task-card-header">
+              <div class="task-category-tag">📦 Delivery</div>
+              <div class="task-budget">₹200</div>
+            </div>
+            <div class="task-title">Pick up courier from Delhivery hub</div>
+            <div class="task-desc">My package has been stuck at the Delhivery warehouse for 3 days. Need someone to collect it with my ID copy.</div>
+            <div class="task-meta">
+              <div class="task-meta-item"><i class="ri-map-pin-line"></i> 3.5 km</div>
+              <div class="task-meta-item"><i class="ri-time-line"></i> 25 min ago</div>
+              <div class="task-meta-item"><i class="ri-user-line"></i> 5 applied</div>
+            </div>
+            <div class="task-creator">
+              <div class="task-creator-avatar">RV</div>
+              <div class="task-creator-name">Rahul Verma</div>
+              <div class="task-creator-rating">⭐ 4.5</div>
+            </div>
+          </div>
+
+          <div class="task-card">
+            <div class="task-card-header">
+              <div class="task-category-tag">🧍 Queue</div>
+              <div class="task-budget">₹500</div>
+            </div>
+            <div class="task-title">Stand in line at RTO for license</div>
+            <div class="task-desc">Need someone to stand in the queue at RTO Jayanagar for driving license renewal. Expected wait 2-3 hours.</div>
+            <div class="task-meta">
+              <div class="task-meta-item"><i class="ri-map-pin-line"></i> 4.8 km</div>
+              <div class="task-meta-item"><i class="ri-time-line"></i> 1 hr ago</div>
+              <div class="task-meta-item"><i class="ri-user-line"></i> 2 applied</div>
+            </div>
+            <div class="task-creator">
+              <div class="task-creator-avatar">SP</div>
+              <div class="task-creator-name">Sneha Patel</div>
+              <div class="task-creator-rating">⭐ 4.9</div>
+            </div>
+          </div>
+
+          <div class="task-card">
+            <div class="task-card-header">
+              <div class="task-category-tag">🐕 Other</div>
+              <div class="task-budget">₹400</div>
+            </div>
+            <div class="task-title">Pet sitting for 3 hours</div>
+            <div class="task-desc">Need someone to watch my Golden Retriever at my home while I attend a meeting. He is friendly and trained.</div>
+            <div class="task-meta">
+              <div class="task-meta-item"><i class="ri-map-pin-line"></i> 4.1 km</div>
+              <div class="task-meta-item"><i class="ri-time-line"></i> 30 min ago</div>
+              <div class="task-meta-item"><i class="ri-user-line"></i> 7 applied</div>
+            </div>
+            <div class="task-creator">
+              <div class="task-creator-avatar">DN</div>
+              <div class="task-creator-name">Divya Nair</div>
+              <div class="task-creator-rating">⭐ 4.9</div>
+            </div>
+          </div>
+
+          <div class="task-card">
+            <div class="task-card-header">
+              <div class="task-category-tag">📸 Photo</div>
+              <div class="task-budget">₹500</div>
+            </div>
+            <div class="task-title">Take photos of apartment for listing</div>
+            <div class="task-desc">Need someone with a decent phone camera to take 15-20 well-lit photos of my 2BHK apartment for a rental listing.</div>
+            <div class="task-meta">
+              <div class="task-meta-item"><i class="ri-map-pin-line"></i> 2.8 km</div>
+              <div class="task-meta-item"><i class="ri-time-line"></i> 6 hrs ago</div>
+              <div class="task-meta-item"><i class="ri-user-line"></i> 6 applied</div>
+            </div>
+            <div class="task-creator">
+              <div class="task-creator-avatar">AK</div>
+              <div class="task-creator-name">Aditya Kulkarni</div>
+              <div class="task-creator-rating">⭐ 4.4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREATE TASK SCREEN -->
+      <div class="screen" id="screen-create">
+        <div class="create-header">Create Task</div>
+        <div class="create-form" style="overflow-y:auto;flex:1;">
+          <div class="form-group">
+            <div class="form-label">Task Title</div>
+            <input class="form-input" placeholder="What do you need done?">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Description</div>
+            <textarea class="form-input" placeholder="Describe the task in detail..."></textarea>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Category</div>
+            <div class="category-grid">
+              <div class="cat-option selected" onclick="selectCat(this)"><i class="ri-file-text-line"></i>Form Filling</div>
+              <div class="cat-option" onclick="selectCat(this)"><i class="ri-truck-line"></i>Delivery</div>
+              <div class="cat-option" onclick="selectCat(this)"><i class="ri-team-line"></i>Queue</div>
+              <div class="cat-option" onclick="selectCat(this)"><i class="ri-shopping-cart-line"></i>Shopping</div>
+              <div class="cat-option" onclick="selectCat(this)"><i class="ri-file-copy-line"></i>Documents</div>
+              <div class="cat-option" onclick="selectCat(this)"><i class="ri-hammer-line"></i>Repairs</div>
+              <div class="cat-option" onclick="selectCat(this)"><i class="ri-car-line"></i>Driving</div>
+              <div class="cat-option" onclick="selectCat(this)"><i class="ri-camera-line"></i>Photo</div>
+              <div class="cat-option" onclick="selectCat(this)"><i class="ri-more-line"></i>Other</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Budget</div>
+            <div class="budget-row">
+              <span class="budget-symbol">₹</span>
+              <input class="form-input" type="number" placeholder="250" style="flex:1;">
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Location</div>
+            <input class="form-input" placeholder="📍 Pick task location">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Deadline</div>
+            <input class="form-input" type="text" placeholder="📅 Select date & time" value="Feb 7, 2026 — 12:00 PM">
+          </div>
+          <button class="post-btn">Post Task ⚡</button>
+        </div>
+      </div>
+
+      <!-- CHAT SCREEN -->
+      <div class="screen" id="screen-chat">
+        <div class="chat-header">Messages</div>
+        <div class="chat-list">
+          <div class="chat-item unread">
+            <div class="chat-avatar">
+              <div class="chat-avatar-circle">SB</div>
+              <div class="online-dot"></div>
+            </div>
+            <div class="chat-content">
+              <div class="chat-name-row"><div class="chat-name">Suresh Babu</div><div class="chat-time">2 min ago</div></div>
+              <div class="chat-task-name">File GST return at CA office</div>
+              <div class="chat-last-msg">They are asking for the PAN card copy too.</div>
+            </div>
+            <div class="unread-badge">2</div>
+          </div>
+          <div class="chat-item unread">
+            <div class="chat-avatar">
+              <div class="chat-avatar-circle">RV</div>
+              <div class="online-dot"></div>
+            </div>
+            <div class="chat-content">
+              <div class="chat-name-row"><div class="chat-name">Rahul Verma</div><div class="chat-time">3 hrs ago</div></div>
+              <div class="chat-task-name">Pick up courier from Delhivery hub</div>
+              <div class="chat-last-msg">Can you share the tracking ID?</div>
+            </div>
+            <div class="unread-badge">1</div>
+          </div>
+          <div class="chat-item">
+            <div class="chat-avatar">
+              <div class="chat-avatar-circle">VJ</div>
+            </div>
+            <div class="chat-content">
+              <div class="chat-name-row"><div class="chat-name">Vikram Joshi</div><div class="chat-time">1 hr ago</div></div>
+              <div class="chat-task-name">Fix leaking kitchen tap</div>
+              <div class="chat-last-msg">Great, see you at 4 PM then!</div>
+            </div>
+          </div>
+          <div class="chat-item">
+            <div class="chat-avatar">
+              <div class="chat-avatar-circle">LD</div>
+            </div>
+            <div class="chat-content">
+              <div class="chat-name-row"><div class="chat-name">Lakshmi Devi</div><div class="chat-time">Yesterday</div></div>
+              <div class="chat-task-name">Buy birthday cake from Aubree</div>
+              <div class="chat-last-msg">Cake delivered safely. Happy birthday! 🎂</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS SCREEN -->
+      <div class="screen" id="screen-notif">
+        <div class="notif-header">
+          <h2>Notifications</h2>
+          <button class="mark-read-btn">Mark all read</button>
+        </div>
+        <div class="notif-section">Today</div>
+        <div class="notif-item unread">
+          <div class="notif-icon task"><i class="ri-task-line"></i></div>
+          <div class="notif-content">
+            <div class="notif-title">New applicant!</div>
+            <div class="notif-body">Ravi Kumar applied for "Submit passport form at PSK"</div>
+            <div class="notif-time">5 min ago</div>
+          </div>
+          <div class="notif-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-icon chat"><i class="ri-chat-3-line"></i></div>
+          <div class="notif-content">
+            <div class="notif-title">New message</div>
+            <div class="notif-body">Suresh Babu: They are asking for the PAN card copy too.</div>
+            <div class="notif-time">10 min ago</div>
+          </div>
+          <div class="notif-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-icon task"><i class="ri-task-line"></i></div>
+          <div class="notif-content">
+            <div class="notif-title">Task in progress</div>
+            <div class="notif-body">Your task "File GST return at CA office" is being worked on</div>
+            <div class="notif-time">30 min ago</div>
+          </div>
+          <div class="notif-dot"></div>
+        </div>
+        <div class="notif-section">Earlier</div>
+        <div class="notif-item">
+          <div class="notif-icon payment"><i class="ri-money-rupee-circle-line"></i></div>
+          <div class="notif-content">
+            <div class="notif-title">Payment received!</div>
+            <div class="notif-body">₹150 credited for completing "Buy birthday cake from Aubree"</div>
+            <div class="notif-time">1 day ago</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon task"><i class="ri-check-double-line"></i></div>
+          <div class="notif-content">
+            <div class="notif-title">Task completed ✓</div>
+            <div class="notif-body">"Buy birthday cake from Aubree" has been marked complete</div>
+            <div class="notif-time">1 day ago</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon payment"><i class="ri-wallet-3-line"></i></div>
+          <div class="notif-content">
+            <div class="notif-title">Wallet topped up</div>
+            <div class="notif-body">₹1,000 added to your wallet via UPI</div>
+            <div class="notif-time">3 days ago</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon system"><i class="ri-star-smile-line"></i></div>
+          <div class="notif-content">
+            <div class="notif-title">Welcome to Taskmate!</div>
+            <div class="notif-body">Start by creating your first task or browsing available tasks nearby.</div>
+            <div class="notif-time">3 days ago</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFILE SCREEN -->
+      <div class="screen" id="screen-profile">
+        <div class="profile-top">
+          <div class="profile-avatar">M</div>
+          <div class="profile-name">Mohit</div>
+          <div class="profile-phone">+91 98765 43210</div>
+          <div class="profile-verified"><i class="ri-verified-badge-fill"></i> Verified</div>
+          <div class="profile-rating">
+            <span class="stars">★★★★★</span> 4.7 (32 reviews)
+          </div>
+          <div class="profile-stats">
+            <div class="profile-stat"><div class="profile-stat-value">15</div><div class="profile-stat-label">Created</div></div>
+            <div class="profile-stat"><div class="profile-stat-value">28</div><div class="profile-stat-label">Completed</div></div>
+            <div class="profile-stat"><div class="profile-stat-value">₹12.8k</div><div class="profile-stat-label">Earned</div></div>
+          </div>
+        </div>
+
+        <div class="profile-wallet-card">
+          <div class="wallet-info">
+            <div class="wallet-label">Wallet Balance</div>
+            <div class="wallet-amount">₹2,450</div>
+          </div>
+          <button class="wallet-btn">+ Add Money</button>
+        </div>
+
+        <div class="profile-menu">
+          <div class="profile-menu-item">
+            <div class="menu-icon blue"><i class="ri-edit-line"></i></div>
+            <span>Edit Profile</span>
+            <i class="ri-arrow-right-s-line"></i>
+          </div>
+          <div class="profile-menu-item">
+            <div class="menu-icon green"><i class="ri-wallet-3-line"></i></div>
+            <span>Wallet & Transactions</span>
+            <i class="ri-arrow-right-s-line"></i>
+          </div>
+          <div class="profile-menu-item">
+            <div class="menu-icon orange"><i class="ri-history-line"></i></div>
+            <span>Task History</span>
+            <i class="ri-arrow-right-s-line"></i>
+          </div>
+          <div class="profile-menu-item">
+            <div class="menu-icon gray"><i class="ri-settings-3-line"></i></div>
+            <span>Settings</span>
+            <i class="ri-arrow-right-s-line"></i>
+          </div>
+          <div class="profile-menu-item">
+            <div class="menu-icon gray"><i class="ri-question-line"></i></div>
+            <span>Help & Support</span>
+            <i class="ri-arrow-right-s-line"></i>
+          </div>
+          <div class="profile-menu-item">
+            <div class="menu-icon red"><i class="ri-logout-box-r-line"></i></div>
+            <span style="color:#E74C3C;">Logout</span>
+            <i class="ri-arrow-right-s-line"></i>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM TAB BAR -->
+    <div class="tab-bar" id="tabBar" style="display:none;">
+      <div class="tab-item active" onclick="switchTab(this,'home')">
+        <i class="ri-home-5-fill"></i>
+        <span>Home</span>
+      </div>
+      <div class="tab-item" onclick="switchTab(this,'create')">
+        <i class="ri-add-circle-line"></i>
+        <span>Create</span>
+      </div>
+      <div class="tab-item" onclick="switchTab(this,'chat')">
+        <i class="ri-chat-3-line"></i>
+        <span>Chat</span>
+        <div class="tab-badge">3</div>
+      </div>
+      <div class="tab-item" onclick="switchTab(this,'notif')">
+        <i class="ri-notification-3-line"></i>
+        <span>Alerts</span>
+        <div class="tab-badge">3</div>
+      </div>
+      <div class="tab-item" onclick="switchTab(this,'profile')">
+        <i class="ri-user-3-line"></i>
+        <span>Profile</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const tabBar = document.getElementById('tabBar');
+  if (name === 'login') {
+    tabBar.style.display = 'none';
+    document.getElementById('statusBar').style.background = '#4A90D9';
+  } else {
+    tabBar.style.display = 'flex';
+    document.getElementById('statusBar').style.background = (name === 'home' || name === 'profile') ? '#4A90D9' : '#fff';
+    document.getElementById('statusBar').style.color = (name === 'home' || name === 'profile') ? '#fff' : '#2C3E50';
+    // update active tab
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    const tabs = ['home','create','chat','notif','profile'];
+    const idx = tabs.indexOf(name);
+    if (idx >= 0) document.querySelectorAll('.tab-item')[idx].classList.add('active');
+  }
+}
+
+function switchTab(el, name) {
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  switchScreen(name);
+}
+
+function toggleRole(el) {
+  el.parentElement.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function selectCat(el) {
+  el.parentElement.querySelectorAll('.cat-option').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+</script>
+
+</body>
+</html>
